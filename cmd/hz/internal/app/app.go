@@ -89,7 +89,7 @@ func Model(c *cli.Context) error {
 	setLogVerbose(args.Verbose)
 	logs.Debugf("Args: %#v\n", args)
 
-	err = triggerPlugin(args)
+	err = TriggerPlugin(args)
 	if err != nil {
 		return cli.Exit(err, meta.PluginError)
 	}

@@ -17,11 +17,11 @@
 package thrift
 
 import (
+	"github.com/cloudwego/hertz/cmd/hz/pkg/argument"
 	"io/ioutil"
 	"strings"
 	"testing"
 
-	"github.com/cloudwego/hertz/cmd/hz/internal/config"
 	"github.com/cloudwego/thriftgo/plugin"
 )
 
@@ -37,7 +37,7 @@ func TestInsertTag(t *testing.T) {
 
 	plu := new(Plugin)
 	plu.req = req
-	plu.args = new(config.Argument)
+	plu.args = new(argument.Argument)
 
 	type TagStruct struct {
 		Annotation   string

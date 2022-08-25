@@ -323,7 +323,7 @@ func (arg *Argument) GetThriftgoOptions() (string, error) {
 	if arg.JSONEnumStr {
 		arg.ThriftOptions = append(arg.ThriftOptions, "json_enum_as_text")
 	}
-	gas := "go:" + strings.Join(arg.ThriftOptions, ",") + ",reserve_comments"
+	gas := "go:" + strings.Join(arg.ThriftOptions, ",") + ",reserve_comments,gen_json_tag=false"
 	return gas, nil
 }
 

@@ -44,15 +44,16 @@ type Service struct {
 }
 
 type HttpPackageGenerator struct {
-	ConfigPath  string
-	Backend     meta.Backend
-	Options     []Option
-	ProjPackage string
-	HandlerDir  string
-	RouterDir   string
-	ModelDir    string
-	ClientDir   string
-	NeedModel   bool
+	ConfigPath      string
+	Backend         meta.Backend
+	Options         []Option
+	ProjPackage     string
+	HandlerDir      string
+	RouterDir       string
+	ModelDir        string
+	ClientDir       string
+	NeedModel       bool
+	HandlerByMethod bool
 
 	loadedBackend   Backend
 	curModel        *model.Model
@@ -136,6 +137,9 @@ func (pkgGen *HttpPackageGenerator) Generate(pkg *HttpPackage) error {
 	}
 
 	handlerDir := util.SubDir(pkgGen.HandlerDir, pkg.Package)
+	if pkgGen.HandlerByMethod {
+		handlerDir = pkgGen.HandlerDir
+	}
 	handlerPackage := util.SubPackage(pkgGen.ProjPackage, handlerDir)
 	routerDir := util.SubDir(pkgGen.RouterDir, pkg.Package)
 	routerPackage := util.SubPackage(pkgGen.ProjPackage, routerDir)

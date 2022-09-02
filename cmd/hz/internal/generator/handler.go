@@ -37,6 +37,7 @@ type HttpMethod struct {
 	ReturnTypeName  string
 	Path            string
 	Serializer      string
+	OutputDir		string
 	// Annotations     map[string]string
 	Models map[string]*model.Model
 }
@@ -55,29 +56,38 @@ type Client struct {
 
 func (pkgGen *HttpPackageGenerator) genHandler(pkg *HttpPackage, handlerDir, handlerPackage string, root *RouterNode) error {
 	for _, s := range pkg.Services {
-		handler := Handler{
-			FilePath:    filepath.Join(handlerDir, util.ToSnakeCase(s.Name)+".go"),
-			PackageName: util.SplitPackage(handlerPackage, ""),
-			Methods:     s.Methods,
-		}
-
-		handler.Imports = make(map[string]*model.Model, len(s.Methods))
-		for _, m := range s.Methods {
-			for key, mm := range m.Models {
-				if v, ok := handler.Imports[mm.PackageName]; ok && v.Package != mm.Package {
-					handler.Imports[key] = mm
-					continue
+		var handler Handler
+		// generate handler by method
+		if pkgGen.HandlerByMethod {
+			for _, m := range s.Methods{
+				handler = Handler{
+					FilePath:    filepath.Join(handlerDir, m.OutputDir, util.ToSnakeCase(m.Name)+".go"),
+					PackageName: util.SplitPackage(handlerPackage, ""),
+					Methods:     []*HttpMethod{m},
 				}
-				handler.Imports[mm.PackageName] = mm
+
+				if err := pkgGen.processHandler(&handler, root, handlerDir, m.OutputDir, true); err != nil {
+					return fmt.Errorf("generate handler %s failed, err: %v", handler.FilePath, err.Error())
+				}
+
+				if err := pkgGen.updateHandler(handler, handlerTplName, handler.FilePath, false); err != nil {
+					return fmt.Errorf("generate handler %s failed, err: %v", handler.FilePath, err.Error())
+				}
 			}
-			err := root.Update(m, handler.PackageName)
-			if err != nil {
-				return err
+		} else { // generate handler service
+			handler = Handler{
+				FilePath:    filepath.Join(handlerDir, util.ToSnakeCase(s.Name)+".go"),
+				PackageName: util.SplitPackage(handlerPackage, ""),
+				Methods:     s.Methods,
 			}
-		}
-		handler.Format()
-		if err := pkgGen.updateHandler(handler, handlerTplName, handler.FilePath, false); err != nil {
-			return fmt.Errorf("generate handler %s failed, err: %v", handler.FilePath, err.Error())
+
+			if err := pkgGen.processHandler(&handler, root, "", "", false); err != nil {
+				return fmt.Errorf("generate handler %s failed, err: %v", handler.FilePath, err.Error())
+			}
+
+			if err := pkgGen.updateHandler(handler, handlerTplName, handler.FilePath, false); err != nil {
+				return fmt.Errorf("generate handler %s failed, err: %v", handler.FilePath, err.Error())
+			}
 		}
 
 		if len(pkgGen.ClientDir) != 0 {
@@ -94,6 +104,30 @@ func (pkgGen *HttpPackageGenerator) genHandler(pkg *HttpPackage, handlerDir, han
 		}
 
 	}
+	return nil
+}
+
+func (pkgGen *HttpPackageGenerator) processHandler(handler *Handler, root *RouterNode, handlerDir, projectOutDir string, handlerByMethod bool) error {
+	singleHandlerPakcage := ""
+	if handlerByMethod {
+		singleHandlerPakcage = util.SubPackage(pkgGen.ProjPackage, filepath.Join(handlerDir, projectOutDir))
+	}
+	handler.Imports = make(map[string]*model.Model, len(handler.Methods))
+	for _, m := range handler.Methods {
+		for key, mm := range m.Models {
+			if v, ok := handler.Imports[mm.PackageName]; ok && v.Package != mm.Package {
+				handler.Imports[key] = mm
+				continue
+			}
+			handler.Imports[mm.PackageName] = mm
+		}
+		err := root.Update(m, handler.PackageName, singleHandlerPakcage)
+		if err != nil {
+			return err
+		}
+	}
+
+	handler.Format()
 	return nil
 }
 

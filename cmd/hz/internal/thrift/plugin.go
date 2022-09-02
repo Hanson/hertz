@@ -115,6 +115,7 @@ func (plugin *Plugin) Run() int {
 		},
 		ProjPackage: pkg,
 		Options:     options,
+		HandlerByMethod: args.HandlerByMethod,
 	}
 	if args.ModelBackend != "" {
 		sg.Backend = meta.Backend(args.ModelBackend)
